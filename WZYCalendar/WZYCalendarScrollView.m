@@ -23,6 +23,14 @@
 
 @property (nonatomic, strong) NSMutableArray *monthArray;
 
+@property (nonatomic, assign) NSInteger selectYear;
+
+@property (nonatomic, assign) NSInteger selectMonth;
+
+@property (nonatomic, assign) NSInteger selectDay;
+
+//
+
 @end
 
 @implementation WZYCalendarScrollView
@@ -167,6 +175,7 @@ static NSString *const kCellIdentifier = @"cell";
 #pragma mark - UICollectionDataSource
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+    
     return 42; // 7 * 6
 }
 
@@ -175,9 +184,15 @@ static NSString *const kCellIdentifier = @"cell";
     
     WZYCalendarCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:kCellIdentifier forIndexPath:indexPath];
     
+    NSInteger year = -1;
+    NSInteger month = -1;
+    NSInteger day = -1;
+    WZYCalendarMonth *currentMonthInfo = [[WZYCalendarMonth alloc] init];
     if (collectionView == _collectionViewL) { // 上一个月展示数据
         
-        WZYCalendarMonth *monthInfo = self.monthArray[0];
+        WZYCalendarMonth * monthInfo = self.monthArray[0];
+        currentMonthInfo.year = monthInfo.year;
+        currentMonthInfo.month = monthInfo.month;
         NSInteger firstWeekday = monthInfo.firstWeekday; // 该月第一天是星期几
         NSInteger totalDays = monthInfo.totalDays; // 该月有几天
         
@@ -187,12 +202,17 @@ static NSString *const kCellIdentifier = @"cell";
             cell.todayLabel.textColor = [UIColor colorWithWhite:0 alpha:0.87];
             
             // 标识今天
+            cell.todayCircle.backgroundColor = [UIColor clearColor];
             if ((monthInfo.month == [[NSDate date] dateMonth]) && (monthInfo.year == [[NSDate date] dateYear])) {
                 if (indexPath.row == [[NSDate date] dateDay] + firstWeekday - 1) {
-                    cell.todayCircle.backgroundColor = CURRENTHEXCOLOR(0xFF5A39);
-                    cell.todayLabel.textColor = [UIColor whiteColor];
-                } else {
-                    cell.todayCircle.backgroundColor = [UIColor clearColor];
+                    if (_selectYear ==0 &&
+                        _selectMonth == 0 &&
+                        _selectDay == 0) {
+                        _selectYear = monthInfo.year;
+                        _selectMonth = monthInfo.month;
+                        _selectDay = [[NSDate date] dateDay];
+                    }
+                    cell.todayLabel.textColor = CURRENTHEXCOLOR(0xFF5A39);
                 }
             } else {
                 cell.todayCircle.backgroundColor = [UIColor clearColor];
@@ -202,6 +222,11 @@ static NSString *const kCellIdentifier = @"cell";
         // 补上前后月的日期，淡色显示
         else if (indexPath.row < firstWeekday) {
             int totalDaysOflastMonth = [self.monthArray[3] intValue];
+            currentMonthInfo.month = currentMonthInfo.month - 1;
+            if (currentMonthInfo.month < 1) {
+                currentMonthInfo.month = 12;
+                currentMonthInfo.year = currentMonthInfo.year - 1;
+            }
             cell.todayLabel.text = [NSString stringWithFormat:@"%ld", totalDaysOflastMonth - (firstWeekday - indexPath.row) + 1];
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
             cell.todayCircle.backgroundColor = [UIColor clearColor];
@@ -209,6 +234,11 @@ static NSString *const kCellIdentifier = @"cell";
             cell.todayLabel.text = [NSString stringWithFormat:@"%ld", indexPath.row - firstWeekday - totalDays + 1];
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
             cell.todayCircle.backgroundColor = [UIColor clearColor];
+            currentMonthInfo.month = currentMonthInfo.month + 1;
+            if (currentMonthInfo.month > 12) {
+                currentMonthInfo.month = 1;
+                currentMonthInfo.year = currentMonthInfo.year + 1;
+            }
         }
         
         cell.userInteractionEnabled = NO;
@@ -216,7 +246,8 @@ static NSString *const kCellIdentifier = @"cell";
     } else if (collectionView == _collectionViewM) { // 当前月的展示数据
         
         WZYCalendarMonth *monthInfo = self.monthArray[1];
-        
+        currentMonthInfo.year = monthInfo.year;
+        currentMonthInfo.month = monthInfo.month;
         // 当前日期所在月份第一天是周几
         NSInteger firstWeekday = monthInfo.firstWeekday;
         // 当前日期是所在月份的第几天
@@ -230,11 +261,18 @@ static NSString *const kCellIdentifier = @"cell";
             
             // 标识今天
             if ((monthInfo.month == [[NSDate date] dateMonth]) && (monthInfo.year == [[NSDate date] dateYear])) {
+                
+                //设置today的颜色
+                cell.todayCircle.backgroundColor = [UIColor clearColor];
                 if (indexPath.row == [[NSDate date] dateDay] + firstWeekday - 1) {
-                    cell.todayCircle.backgroundColor = CURRENTHEXCOLOR(0xFF5A39);
-                    cell.todayLabel.textColor = [UIColor whiteColor];
-                } else {
-                    cell.todayCircle.backgroundColor = [UIColor clearColor];
+                    if (_selectYear ==0 &&
+                        _selectMonth == 0 &&
+                        _selectDay == 0) {
+                        _selectYear = monthInfo.year;
+                        _selectMonth = monthInfo.month;
+                        _selectDay = [[NSDate date] dateDay];
+                    }
+                    cell.todayLabel.textColor = CURRENTHEXCOLOR(0xFF5A39);
                 }
             } else {
                 cell.todayCircle.backgroundColor = [UIColor clearColor];
@@ -244,6 +282,8 @@ static NSString *const kCellIdentifier = @"cell";
         // 补上前后月的日期，淡色显示
         else if (indexPath.row < firstWeekday) {
             WZYCalendarMonth *lastMonthInfo = self.monthArray[0];
+            currentMonthInfo.year = lastMonthInfo.year;
+            currentMonthInfo.month = lastMonthInfo.month;
             NSInteger totalDaysOflastMonth = lastMonthInfo.totalDays;
             cell.todayLabel.text = [NSString stringWithFormat:@"%ld", totalDaysOflastMonth - (firstWeekday - indexPath.row) + 1];
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
@@ -254,11 +294,18 @@ static NSString *const kCellIdentifier = @"cell";
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
             cell.todayCircle.backgroundColor = [UIColor clearColor];
             cell.userInteractionEnabled = NO;
+            currentMonthInfo.month = currentMonthInfo.month + 1;
+            if (currentMonthInfo.month > 12) {
+                currentMonthInfo.month = 1;
+                currentMonthInfo.year = currentMonthInfo.year + 1;
+            }
         }
         
     } else if (collectionView == _collectionViewR) { // 下一个月的展示数据
         
-        WZYCalendarMonth *monthInfo = self.monthArray[2];
+        WZYCalendarMonth * monthInfo = self.monthArray[2];
+        currentMonthInfo.year = monthInfo.year;
+        currentMonthInfo.month = monthInfo.month;
         NSInteger firstWeekday = monthInfo.firstWeekday;
         NSInteger totalDays = monthInfo.totalDays;
         
@@ -270,11 +317,16 @@ static NSString *const kCellIdentifier = @"cell";
             
             // 标识今天
             if ((monthInfo.month == [[NSDate date] dateMonth]) && (monthInfo.year == [[NSDate date] dateYear])) {
+                cell.todayCircle.backgroundColor = [UIColor clearColor];
                 if (indexPath.row == [[NSDate date] dateDay] + firstWeekday - 1) {
-                    cell.todayCircle.backgroundColor = CURRENTHEXCOLOR(0xFF5A39);
-                    cell.todayLabel.textColor = [UIColor whiteColor];
-                } else {
-                    cell.todayCircle.backgroundColor = [UIColor clearColor];
+                    if (_selectYear ==0 &&
+                        _selectMonth == 0 &&
+                        _selectDay == 0) {
+                        _selectYear = monthInfo.year;
+                        _selectMonth = monthInfo.month;
+                        _selectDay = [[NSDate date] dateDay];
+                    }
+                    cell.todayLabel.textColor = CURRENTHEXCOLOR(0xFF5A39);
                 }
             } else {
                 cell.todayCircle.backgroundColor = [UIColor clearColor];
@@ -283,6 +335,8 @@ static NSString *const kCellIdentifier = @"cell";
             // 补上前后月的日期，淡色显示
         } else if (indexPath.row < firstWeekday) {
             WZYCalendarMonth *lastMonthInfo = self.monthArray[1];
+            currentMonthInfo.year = lastMonthInfo.year;
+            currentMonthInfo.month = lastMonthInfo.month;
             NSInteger totalDaysOflastMonth = lastMonthInfo.totalDays;
             cell.todayLabel.text = [NSString stringWithFormat:@"%ld", totalDaysOflastMonth - (firstWeekday - indexPath.row) + 1];
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
@@ -291,10 +345,24 @@ static NSString *const kCellIdentifier = @"cell";
             cell.todayLabel.text = [NSString stringWithFormat:@"%ld", indexPath.row - firstWeekday - totalDays + 1];
             cell.todayLabel.textColor = CURRENTHEXCOLOR(0xADADAD);
             cell.todayCircle.backgroundColor = [UIColor clearColor];
+            currentMonthInfo.month = currentMonthInfo.month + 1;
+            if (currentMonthInfo.month > 12) {
+                currentMonthInfo.month = 1;
+                currentMonthInfo.year = currentMonthInfo.year + 1;
+            }
         }
         
         cell.userInteractionEnabled = NO;
         
+    }
+    
+    year = currentMonthInfo.year;
+    month = currentMonthInfo.month;
+    day = [cell.todayLabel.text integerValue];
+    //当前选中的path
+    if (_selectYear == year && _selectMonth == month && _selectDay == day) {
+        cell.todayCircle.backgroundColor = CURRENTHEXCOLOR(0xFF5A39);
+        cell.todayLabel.textColor = [UIColor whiteColor];
     }
     
     return cell;
@@ -319,8 +387,15 @@ static NSString *const kCellIdentifier = @"cell";
         NSInteger day = [cell.todayLabel.text integerValue];
         
         self.didSelectDayHandler(year, month, day); // 执行回调（将点击的日期cell上面的信息回调出去）
+        _selectYear = year;
+        _selectMonth = month;
+        _selectDay = day;
     }
     
+    
+    [_collectionViewL reloadData];
+    [_collectionViewM reloadData];
+    [_collectionViewR reloadData];
 }
 
 
